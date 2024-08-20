@@ -1,39 +1,45 @@
 #!/bin/bash
 
-# Default values
 visibility=""
 service_account=""
+bundle_import_flag="-g"
 
 # Parse arguments
-while getopts "v:a:" opt; do
-  case $opt in
-    v)
-      if [ "$OPTARG" == "ALL" ]; then
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -v)
+      if [ "$2" == "ALL" ]; then
         visibility="-v ALL_USERS"
       fi
+      shift 2
       ;;
-    a)
-      case $OPTARG in
+    -a)
+      case $2 in
         dev-mcci)
-          service_account="hadc-7342183-wave-mcci-sa"
+          service_account="hadc-7342842-wave-mcci-sa"
           ;;
         int-mcci)
           service_account="hadc-7342185-wave-mcci-sa"
           ;;
         dev-mcac)
-          service_account="hadc-7342183-wave-mcac-sa"
+          service_account="hadc-7342842-wave-mcac-sa"
           ;;
         int-mcac)
           service_account="hadc-7342185-wave-mcac-sa"
           ;;
         *)
-          echo "Error: Invalid service account option '$OPTARG'."
+          echo "Error: Invalid service account option '$2'."
           exit 1
           ;;
       esac
+      shift 2
       ;;
-    \?)
-      echo "Invalid option: -$OPTARG"
+    --no-g)
+      bundle_import_flag=""
+      shift
+      ;;
+    *)
+      echo "Error: Invalid option '$1'."
       exit 1
       ;;
   esac
@@ -45,8 +51,8 @@ if [ -z "$service_account" ]; then
   exit 1
 fi
 
-# Run h2o bundle import -g with visibility if specified
-output=$(h2o bundle import -g $visibility)
+# Run h2o bundle import with visibility and without -g if specified
+output=$(h2o bundle import $bundle_import_flag $visibility)
 
 # Extract the ID from the output using awk
 app_id=$(echo "$output" | awk '/^ID/ {print $2}')
@@ -66,8 +72,8 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Run the app and capture the output
-run_output=$(h2o app run "$app_id")
+# Run the app with visibility if specified and capture the output
+run_output=$(h2o app run "$app_id" $visibility)
 
 # Print the output to the terminal
 echo "$run_output"
@@ -84,7 +90,7 @@ fi
 url=$(echo "$run_output" | awk '/^URL/ {print $2}')
 
 # Open the URL in the default web browser
-if [ -n "$url" ]; then
+if [ -n "$url" ];then
   open "$url"
 else
   echo "Error: Could not extract the URL."
