@@ -8,10 +8,11 @@ display_help() {
     echo
     echo "Arguments:"
     echo "  mcci-internal, mcci-dev, mcac, mcam-internal, mcam-dev"
-    echo "                        The project for which the secrets should be updated."
-    echo "  --no-delete           Do not delete the existing secret before creating the new one."
-    echo "  --conf=\"SOME_CONF\"   Provide additional configuration parameter."
-    echo "  -h, --help            Display this help text."
+    echo "                         The project for which the secrets should be updated."
+    echo "  --no-delete            Do not delete the existing secret before creating the new one."
+    echo "  --conf=\"SOME_CONF\"     Provide additional configuration parameter."
+    echo "  --json-dir=\"SOME_DIR\"  Provides the directory where the json files with secrets are located"
+    echo "  -h, --help             Display this help text."
     echo
     exit 0
 }
@@ -89,6 +90,11 @@ KEY_VALUES=($(jq -r 'to_entries[] | "\(.key)=\(.value)"' "$JSON_FILE"))
 if [ ${#KEY_VALUES[@]} -eq 0 ]; then
     echo "Error: No key-value pairs found in $JSON_FILE."
     exit 1
+fi
+
+# Delete the existing secret if --no-delete flag is not passed
+if [ "$NO_DELETE" == "false" ]; then
+    eval h2o secret delete $SECRET_NAME $CONF_PARAM
 fi
 
 # Extract the first key-value pair
